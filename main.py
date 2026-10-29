@@ -3,6 +3,7 @@ import time
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from scrape.browserManager import browserManagerInstance
 from scrape.router import scrapeRouter
@@ -65,6 +66,10 @@ async def checkHealth() -> dict:
         "service": "AirCrawl",
         "activeModules": ["search", "scrape"],
     }
+
+
+# Serve the static frontend (Playground UI)
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 
 if __name__ == "__main__":

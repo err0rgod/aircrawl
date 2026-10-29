@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirCrawl — Aerodynamic Web Scraping & Crawling</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Marked for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="text-slate-800 antialiased selection:bg-sky-100 selection:text-sky-900">
+    <!-- Navbar -->
+    <header class="sticky top-0 z-50 border-b border-sky-100/80 bg-white/70 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
+                    <i data-lucide="wind" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <span class="text-lg font-bold bg-gradient-to-r from-sky-600 to-teal-600 bg-clip-text text-transparent">AirCrawl</span>
+                    <span class="text-xs px-2 py-0.5 ml-1.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200/60 font-medium">v1.0</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 text-sm font-medium">
+                <div id="backendStatusBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>API Online</span>
+                </div>
+                <a href="/docs" target="_blank" class="text-slate-600 hover:text-sky-600 flex items-center gap-1 transition">
+                    <i data-lucide="book-open" class="w-4 h-4"></i> Docs
+                </a>
+                <a href="https://github.com/err0rgod/aircrawl" target="_blank" class="text-slate-600 hover:text-sky-600 flex items-center gap-1 transition">
+                    <i data-lucide="github" class="w-4 h-4"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Hero Tagline -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+                Aerodynamic Web Scraping, Search & Extraction
+            </h1>
+            <p class="text-slate-500 mt-2 max-w-2xl mx-auto text-sm md:text-base">
+                Turn any dynamic web page into clean, LLM-ready Markdown and structured data at breathable speeds.
+            </p>
+        </div>
+
+        <!-- Playground Card -->
+        <section class="air-glass rounded-2xl p-6 mb-8">
+            <!-- Feature Mode Tabs -->
+            <div class="flex items-center justify-between border-b border-sky-100 pb-4 mb-5">
+                <div class="flex items-center gap-2">
+                    <button id="tabScrapeBtn" onclick="switchMainTab('scrape')" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-sky-500 text-white shadow-md shadow-sky-500/20 flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-4 h-4"></i> Scrape
+                    </button>
+                    <button id="tabSearchBtn" onclick="switchMainTab('search')" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-sky-50 flex items-center gap-2">
+                        <i data-lucide="search" class="w-4 h-4"></i> Search
+                    </button>
+                </div>
+                <!-- Quick Demo Buttons -->
+                <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
+                    <span>Try:</span>
+                    <button onclick="setSampleUrl('https://zerodaily.in')" class="px-2 py-1 rounded-md bg-white border border-slate-200 hover:border-sky-400 text-slate-700 transition">zerodaily.in (SPA)</button>
+                    <button onclick="setSampleUrl('https://example.com')" class="px-2 py-1 rounded-md bg-white border border-slate-200 hover:border-sky-400 text-slate-700 transition">example.com (Static)</button>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <form id="actionForm" onsubmit="handleExecute(event)" class="space-y-4">
+                <div class="flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i id="inputIcon" data-lucide="globe" class="w-5 h-5"></i>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="primaryInput" 
+                            placeholder="https://zerodaily.in" 
+                            value="https://zerodaily.in"
+                            required
+                            class="w-full pl-11 pr-4 py-3 rounded-xl border border-sky-200/80 bg-white/90 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition text-sm font-mono"
+                        />
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="submitBtn"
+                        class="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-semibold text-sm transition shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span id="submitBtnText">Execute Scrape</span>
+                    </button>
+                </div>
+
+                <!-- Scrape Options Row -->
+                <div id="scrapeOptionsRow" class="flex flex-wrap items-center justify-between gap-4 pt-2 text-xs text-slate-600">
+                    <!-- Formats Checkboxes -->
+                    <div class="flex items-center gap-4">
+                        <span class="font-semibold text-slate-700">Formats:</span>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="fmtMarkdown" checked class="rounded text-sky-600 focus:ring-sky-500">
+                            <span>Markdown</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="fmtHtml" class="rounded text-sky-600 focus:ring-sky-500">
+                            <span>Clean HTML</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="fmtLinks" checked class="rounded text-sky-600 focus:ring-sky-500">
+                            <span>Links</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="fmtScreenshot" class="rounded text-sky-600 focus:ring-sky-500">
+                            <span>Screenshot</span>
+                        </label>
+                    </div>
+
+                    <!-- Engine Selector -->
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-slate-700">Engine:</span>
+                        <select id="engineModeSelect" class="bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                            <option value="auto">Auto (Hybrid Fallback)</option>
+                            <option value="http">Fast HTTP Only</option>
+                            <option value="browser">Headless Browser (Playwright)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Search Options Row (Hidden by default) -->
+                <div id="searchOptionsRow" class="hidden flex items-center gap-4 pt-2 text-xs text-slate-600">
+                    <span class="font-semibold text-slate-700">Results Limit:</span>
+                    <select id="searchLimitSelect" class="bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none">
+                        <option value="3">3 Results</option>
+                        <option value="5" selected>5 Results</option>
+                        <option value="10">10 Results</option>
+                    </select>
+                </div>
+            </form>
+        </section>
+
+        <!-- Live Output Deck (Hidden until first execution) -->
+        <section id="resultsDeck" class="hidden space-y-4">
+            <!-- Results Header & Metrics Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-white/80 border border-sky-100 rounded-xl px-4 py-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <span id="metricStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">200 OK</span>
+                    <span id="metricEngineBadge" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">Engine: Auto</span>
+                    <span id="metricDurationBadge" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                        <i data-lucide="zap" class="w-3.5 h-3.5"></i> <span id="metricDurationText">0ms</span>
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="copyActiveContent()" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-sky-300 text-slate-600 hover:text-sky-600 text-xs font-medium flex items-center gap-1.5 transition">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span id="copyBtnText">Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Tabs -->
+            <div class="air-glass rounded-2xl overflow-hidden shadow-sm">
+                <!-- Tabs Nav -->
+                <div class="flex items-center border-b border-sky-100 bg-slate-50/50 px-4 pt-2 gap-2 text-xs font-medium text-slate-600">
+                    <button id="viewTabMarkdown" onclick="switchOutputTab('markdown')" class="px-3 py-2 border-b-2 border-sky-500 text-sky-600 font-semibold transition">Rendered</button>
+                    <button id="viewTabRawMarkdown" onclick="switchOutputTab('rawMarkdown')" class="px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">Raw Markdown</button>
+                    <button id="viewTabJson" onclick="switchOutputTab('json')" class="px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">JSON</button>
+                    <button id="viewTabLinks" onclick="switchOutputTab('links')" class="px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">Links (<span id="linksCountText">0</span>)</button>
+                    <button id="viewTabScreenshot" onclick="switchOutputTab('screenshot')" class="hidden px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">Screenshot</button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="p-6">
+                    <!-- 1. Rendered Markdown -->
+                    <div id="contentRendered" class="prose prose-sky max-w-none max-h-[600px] overflow-y-auto"></div>
+
+                    <!-- 2. Raw Markdown -->
+                    <pre id="contentRawMarkdown" class="hidden text-xs text-slate-800 bg-slate-50 p-4 rounded-xl max-h-[600px] overflow-auto font-mono whitespace-pre-wrap"></pre>
+
+                    <!-- 3. JSON Output -->
+                    <pre id="contentJson" class="hidden text-xs text-sky-950 bg-slate-900 text-emerald-400 p-4 rounded-xl max-h-[600px] overflow-auto font-mono whitespace-pre-wrap"></pre>
+
+                    <!-- 4. Links Grid -->
+                    <div id="contentLinks" class="hidden space-y-2 max-h-[600px] overflow-y-auto">
+                        <ul id="linksListContainer" class="divide-y divide-slate-100 text-xs"></ul>
+                    </div>
+
+                    <!-- 5. Screenshot View -->
+                    <div id="contentScreenshot" class="hidden flex flex-col items-center">
+                        <img id="screenshotImage" class="rounded-xl border border-slate-200 shadow-md max-h-[550px] object-contain" alt="Page Screenshot" />
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
