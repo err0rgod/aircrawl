@@ -7,6 +7,7 @@
 - [ ] **3. Interact:** Browser action sequencer (`click`, `fill`, `scroll`, `wait`, `press`, `eval`) for dynamic interactions (`/v1/interact`)
 - [ ] **5. Crawl Entire Website:** Recursive spidering engine with domain boundary scoping, sitemap ingestion, depth limits, and concurrent link queues (`/v1/crawl`)
 - [ ] **6. Monitor:** Page change detection, scheduled recurring scrapes, visual and DOM diffing, and webhook notifications (`/v1/monitor`)
+- [ ] **7. Code Understanding & Repo Ingestion:** Specialized engine to crawl code repositories (GitHub, GitLab), parse ASTs/file trees, strip noise, and output clean code context for LLMs (`/v1/code`)
 
 ---
 
@@ -45,6 +46,13 @@
 ## 6. Frontend UI & Dashboard
 - [ ] **Playground Redesign:** Professional, high-polish developer console (clean minimal aesthetic, tabbed inspector, Monaco code editor, live response streaming)
 - [ ] **Dashboard:** User dashboard for viewing past scrapes, crawl jobs, API key generator, and billing invoices
+
+---
+
+## 7. System Design & Architecture Documentation
+- [ ] **End-to-End System Design Spec:** Formal architecture document detailing component interactions, C4 diagrams, sequence diagrams, and failure recovery
+- [ ] **Scale & Capacity Planning:** Concurrency models, memory budgeting for Chromium instances on AWS Lightsail/EC2, and network bandwidth estimates
+- [ ] **Database & Queue Schemas:** Redis job state schemas, task status transitions, and data persistence models
 
 ---
 
