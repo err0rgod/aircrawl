@@ -24,6 +24,7 @@ async def testHealthEndpoint():
         assert data["status"] == "healthy"
         assert "search" in data["activeModules"]
         assert "scrape" in data["activeModules"]
+        assert "parse" in data["activeModules"]
 
 
 @pytest.mark.asyncio
@@ -97,3 +98,21 @@ async def testScrapeEndpointStatic():
         assert "metrics" in responseData
         assert responseData["metrics"]["durationMs"] > 0
         assert "X-Response-Time" in response.headers
+
+
+@pytest.mark.asyncio
+async def testParseValidationMissingInput():
+    """Verifies that /v1/parse properly validates that either url or markdown must be supplied."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as testClient:
+        response = await testClient.post(
+            "/v1/parse",
+            json={
+                "prompt": "Extract pricing plans",
+            },
+        )
+        # Should fail with 400 Bad Request because neither url nor markdown was provided
+        assert response.status_code == 400
+        assert "No content available to parse" in response.json()["detail"]

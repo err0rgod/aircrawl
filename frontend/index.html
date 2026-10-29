@@ -3,205 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AirCrawl — Aerodynamic Web Scraping & Crawling</title>
-    <!-- Tailwind CSS -->
+    <title>AirCrawl</title>
+    <meta name="description" content="AirCrawl playground for web search and page scraping.">
+    <meta name="theme-color" content="#081116">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23081116'/%3E%3Cpath d='M7 11h12M7 16h18M7 21h8' stroke='%233ee0c5' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Marked for Markdown Rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/styles.css?v=2">
 </head>
-<body class="text-slate-800 antialiased selection:bg-sky-100 selection:text-sky-900">
-    <!-- Navbar -->
-    <header class="sticky top-0 z-50 border-b border-sky-100/80 bg-white/70 backdrop-blur-md">
-        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-                    <i data-lucide="wind" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <span class="text-lg font-bold bg-gradient-to-r from-sky-600 to-teal-600 bg-clip-text text-transparent">AirCrawl</span>
-                    <span class="text-xs px-2 py-0.5 ml-1.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200/60 font-medium">v1.0</span>
-                </div>
+<body>
+    <a class="skip" href="#commandInput">Skip to command</a>
+    <div class="deck">
+        <header class="topbar">
+            <div class="brand">
+                <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+                    <rect x="0.5" y="0.5" width="31" height="31" rx="9" fill="#062820" stroke="#1c7d6c"/>
+                    <path d="M7 20.5c5.4-7.6 8.6-7.2 18-2" fill="none" stroke="#3ee0c5" stroke-width="2.15" stroke-linecap="round"/>
+                    <path d="M9.5 25c4.4-5.4 6.8-5.1 12.5-1.6" fill="none" stroke="#bffff3" stroke-width="2.15" stroke-linecap="round"/>
+                </svg>
+                <span class="brand-name">AirCrawl</span>
+                <span class="brand-version">v1</span>
             </div>
-            <div class="flex items-center gap-4 text-sm font-medium">
-                <div id="backendStatusBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>API Online</span>
+            <div class="topbar-actions">
+                <div id="healthBadge" class="health" data-state="checking" title="Checking the local API">
+                    <span class="health-dot" aria-hidden="true"></span>
+                    <span id="healthLabel">Checking</span>
                 </div>
-                <a href="/docs" target="_blank" class="text-slate-600 hover:text-sky-600 flex items-center gap-1 transition">
-                    <i data-lucide="book-open" class="w-4 h-4"></i> Docs
+                <a class="top-link" href="/docs" target="_blank" rel="noreferrer">
+                    <i data-lucide="book-open"></i>
+                    <span>Docs</span>
                 </a>
-                <a href="https://github.com/err0rgod/aircrawl" target="_blank" class="text-slate-600 hover:text-sky-600 flex items-center gap-1 transition">
-                    <i data-lucide="github" class="w-4 h-4"></i> GitHub
+                <a class="top-link" href="https://github.com/err0rgod/aircrawl" target="_blank" rel="noreferrer">
+                    <i data-lucide="github"></i>
+                    <span>GitHub</span>
                 </a>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Main Container -->
-    <main class="max-w-6xl mx-auto px-4 py-8">
-        <!-- Hero Tagline -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-                Aerodynamic Web Scraping, Search & Extraction
-            </h1>
-            <p class="text-slate-500 mt-2 max-w-2xl mx-auto text-sm md:text-base">
-                Turn any dynamic web page into clean, LLM-ready Markdown and structured data at breathable speeds.
-            </p>
-        </div>
-
-        <!-- Playground Card -->
-        <section class="air-glass rounded-2xl p-6 mb-8">
-            <!-- Feature Mode Tabs -->
-            <div class="flex items-center justify-between border-b border-sky-100 pb-4 mb-5">
-                <div class="flex items-center gap-2">
-                    <button id="tabScrapeBtn" onclick="switchMainTab('scrape')" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-sky-500 text-white shadow-md shadow-sky-500/20 flex items-center gap-2">
-                        <i data-lucide="file-text" class="w-4 h-4"></i> Scrape
+        <div class="workspace">
+            <aside class="rail">
+                <nav class="mode-nav" aria-label="Playground mode">
+                    <button type="button" id="modeScrapeBtn" class="mode-btn is-on" aria-pressed="true">
+                        <i data-lucide="file-text"></i>
+                        <span>
+                            <strong>Scrape</strong>
+                            <small>Page to markdown</small>
+                        </span>
                     </button>
-                    <button id="tabSearchBtn" onclick="switchMainTab('search')" class="px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-sky-50 flex items-center gap-2">
-                        <i data-lucide="search" class="w-4 h-4"></i> Search
+                    <button type="button" id="modeSearchBtn" class="mode-btn" aria-pressed="false">
+                        <i data-lucide="search"></i>
+                        <span>
+                            <strong>Search</strong>
+                            <small>Semantic web search</small>
+                        </span>
                     </button>
-                </div>
-                <!-- Quick Demo Buttons -->
-                <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
-                    <span>Try:</span>
-                    <button onclick="setSampleUrl('https://zerodaily.in')" class="px-2 py-1 rounded-md bg-white border border-slate-200 hover:border-sky-400 text-slate-700 transition">zerodaily.in (SPA)</button>
-                    <button onclick="setSampleUrl('https://example.com')" class="px-2 py-1 rounded-md bg-white border border-slate-200 hover:border-sky-400 text-slate-700 transition">example.com (Static)</button>
-                </div>
-            </div>
+                </nav>
 
-            <!-- Input Bar -->
-            <form id="actionForm" onsubmit="handleExecute(event)" class="space-y-4">
-                <div class="flex flex-col md:flex-row gap-3">
-                    <div class="relative flex-1">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                            <i id="inputIcon" data-lucide="globe" class="w-5 h-5"></i>
+                <div class="history-block">
+                    <div class="history-heading">
+                        <h2>This session</h2>
+                        <button type="button" id="clearHistoryBtn" class="text-btn" disabled>Clear</button>
+                    </div>
+                    <p id="historyEmpty" class="history-empty">Runs in this tab land here.</p>
+                    <div id="historyList" class="history-list"></div>
+                </div>
+
+                <p class="rail-note">Search and scrape are live. Interact, parse, crawl, and monitor are next.</p>
+            </aside>
+
+            <main class="main-pane">
+                <form id="commandForm" class="command-panel">
+                    <div class="command-copy">
+                        <p id="commandEyebrow" class="eyebrow">Scrape</p>
+                        <p id="commandHint" class="command-hint">Fast HTTP, then a warm browser when the page is a shell. You get markdown, HTML, links, and screenshots.</p>
+                    </div>
+
+                    <div class="command-row">
+                        <label class="sr-only" for="commandInput">Page URL</label>
+                        <input
+                            id="commandInput"
+                            class="command-input"
+                            type="text"
+                            spellcheck="false"
+                            autocomplete="off"
+                            placeholder="https://zerodaily.in"
+                            aria-label="Page URL"
+                        >
+                        <button id="runBtn" class="run-btn" type="submit">
+                            <span id="runLabel">Run scrape</span>
+                        </button>
+                    </div>
+                    <p class="shortcut">Shortcut <kbd id="shortcutKey">Ctrl</kbd> <kbd>Enter</kbd></p>
+
+                    <div id="scrapeControls" class="controls">
+                        <div class="option-grid">
+                            <fieldset class="field">
+                                <legend>Formats</legend>
+                                <div id="formatChips" class="chip-row">
+                                    <button type="button" class="chip is-on" data-format="markdown" aria-pressed="true">Markdown</button>
+                                    <button type="button" class="chip is-on" data-format="links" aria-pressed="true">Links</button>
+                                    <button type="button" class="chip" data-format="html" aria-pressed="false">Clean HTML</button>
+                                    <button type="button" class="chip" data-format="rawHtml" aria-pressed="false">Raw HTML</button>
+                                    <button type="button" class="chip" data-format="screenshot" aria-pressed="false">Screenshot</button>
+                                </div>
+                            </fieldset>
+                            <fieldset class="field">
+                                <legend>Engine</legend>
+                                <div id="engineGroup" class="segment" role="radiogroup" aria-label="Engine">
+                                    <button type="button" class="is-on" role="radio" data-engine="auto" aria-checked="true">Auto</button>
+                                    <button type="button" role="radio" data-engine="http" aria-checked="false">HTTP</button>
+                                    <button type="button" role="radio" data-engine="browser" aria-checked="false">Browser</button>
+                                </div>
+                                <p id="engineHint" class="field-hint">HTTP first. Falls back to a warm browser when the page looks like a shell or a block page.</p>
+                            </fieldset>
                         </div>
-                        <input 
-                            type="text" 
-                            id="primaryInput" 
-                            placeholder="https://zerodaily.in" 
-                            value="https://zerodaily.in"
-                            required
-                            class="w-full pl-11 pr-4 py-3 rounded-xl border border-sky-200/80 bg-white/90 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition text-sm font-mono"
-                        />
-                    </div>
-                    <button 
-                        type="submit" 
-                        id="submitBtn"
-                        class="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-semibold text-sm transition shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                        <i data-lucide="sparkles" class="w-4 h-4"></i>
-                        <span id="submitBtnText">Execute Scrape</span>
-                    </button>
-                </div>
-
-                <!-- Scrape Options Row -->
-                <div id="scrapeOptionsRow" class="flex flex-wrap items-center justify-between gap-4 pt-2 text-xs text-slate-600">
-                    <!-- Formats Checkboxes -->
-                    <div class="flex items-center gap-4">
-                        <span class="font-semibold text-slate-700">Formats:</span>
-                        <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="fmtMarkdown" checked class="rounded text-sky-600 focus:ring-sky-500">
-                            <span>Markdown</span>
-                        </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="fmtHtml" class="rounded text-sky-600 focus:ring-sky-500">
-                            <span>Clean HTML</span>
-                        </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="fmtLinks" checked class="rounded text-sky-600 focus:ring-sky-500">
-                            <span>Links</span>
-                        </label>
-                        <label class="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="fmtScreenshot" class="rounded text-sky-600 focus:ring-sky-500">
-                            <span>Screenshot</span>
-                        </label>
+                        <p id="screenshotHint" class="field-hint warn-hint" hidden></p>
+                        <button type="button" id="advancedToggle" class="text-btn advanced-toggle" aria-expanded="false" aria-controls="advancedPanel">
+                            Advanced
+                            <i data-lucide="chevron-down"></i>
+                        </button>
+                        <div id="advancedPanel" class="advanced" hidden>
+                            <label class="field">
+                                <span>Wait for selector</span>
+                                <input id="waitForSelector" class="field-input" type="text" spellcheck="false" placeholder="article, #root, .content" autocomplete="off">
+                            </label>
+                            <label class="field">
+                                <span>Timeout (ms)</span>
+                                <input id="timeoutMs" class="field-input" type="number" min="1000" max="120000" step="1000" value="30000">
+                            </label>
+                        </div>
                     </div>
 
-                    <!-- Engine Selector -->
-                    <div class="flex items-center gap-2">
-                        <span class="font-semibold text-slate-700">Engine:</span>
-                        <select id="engineModeSelect" class="bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-sky-500">
-                            <option value="auto">Auto (Hybrid Fallback)</option>
-                            <option value="http">Fast HTTP Only</option>
-                            <option value="browser">Headless Browser (Playwright)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Search Options Row (Hidden by default) -->
-                <div id="searchOptionsRow" class="hidden flex items-center gap-4 pt-2 text-xs text-slate-600">
-                    <span class="font-semibold text-slate-700">Results Limit:</span>
-                    <select id="searchLimitSelect" class="bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none">
-                        <option value="3">3 Results</option>
-                        <option value="5" selected>5 Results</option>
-                        <option value="10">10 Results</option>
-                    </select>
-                </div>
-            </form>
-        </section>
-
-        <!-- Live Output Deck (Hidden until first execution) -->
-        <section id="resultsDeck" class="hidden space-y-4">
-            <!-- Results Header & Metrics Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-3 bg-white/80 border border-sky-100 rounded-xl px-4 py-3 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <span id="metricStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">200 OK</span>
-                    <span id="metricEngineBadge" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">Engine: Auto</span>
-                    <span id="metricDurationBadge" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
-                        <i data-lucide="zap" class="w-3.5 h-3.5"></i> <span id="metricDurationText">0ms</span>
-                    </span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="copyActiveContent()" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-sky-300 text-slate-600 hover:text-sky-600 text-xs font-medium flex items-center gap-1.5 transition">
-                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                        <span id="copyBtnText">Copy</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Output Tabs -->
-            <div class="air-glass rounded-2xl overflow-hidden shadow-sm">
-                <!-- Tabs Nav -->
-                <div class="flex items-center border-b border-sky-100 bg-slate-50/50 px-4 pt-2 gap-2 text-xs font-medium text-slate-600">
-                    <button id="viewTabMarkdown" onclick="switchOutputTab('markdown')" class="px-3 py-2 border-b-2 border-sky-500 text-sky-600 font-semibold transition">Rendered</button>
-                    <button id="viewTabRawMarkdown" onclick="switchOutputTab('rawMarkdown')" class="px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">Raw Markdown</button>
-                    <button id="viewTabJson" onclick="switchOutputTab('json')" class="px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">JSON</button>
-                    <button id="viewTabLinks" onclick="switchOutputTab('links')" class="px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">Links (<span id="linksCountText">0</span>)</button>
-                    <button id="viewTabScreenshot" onclick="switchOutputTab('screenshot')" class="hidden px-3 py-2 border-b-2 border-transparent hover:text-slate-900 transition">Screenshot</button>
-                </div>
-
-                <!-- Tab Contents -->
-                <div class="p-6">
-                    <!-- 1. Rendered Markdown -->
-                    <div id="contentRendered" class="prose prose-sky max-w-none max-h-[600px] overflow-y-auto"></div>
-
-                    <!-- 2. Raw Markdown -->
-                    <pre id="contentRawMarkdown" class="hidden text-xs text-slate-800 bg-slate-50 p-4 rounded-xl max-h-[600px] overflow-auto font-mono whitespace-pre-wrap"></pre>
-
-                    <!-- 3. JSON Output -->
-                    <pre id="contentJson" class="hidden text-xs text-sky-950 bg-slate-900 text-emerald-400 p-4 rounded-xl max-h-[600px] overflow-auto font-mono whitespace-pre-wrap"></pre>
-
-                    <!-- 4. Links Grid -->
-                    <div id="contentLinks" class="hidden space-y-2 max-h-[600px] overflow-y-auto">
-                        <ul id="linksListContainer" class="divide-y divide-slate-100 text-xs"></ul>
+                    <div id="searchControls" class="controls" hidden>
+                        <div class="search-grid">
+                            <label class="field">
+                                <span>Results</span>
+                                <input id="searchLimit" class="field-input narrow" type="number" min="1" max="50" step="1" value="5">
+                            </label>
+                            <fieldset class="field">
+                                <legend>Exa type</legend>
+                                <div id="searchTypeGroup" class="segment" role="radiogroup" aria-label="Exa search type">
+                                    <button type="button" class="is-on" role="radio" data-search-type="auto" aria-checked="true">Auto</button>
+                                    <button type="button" role="radio" data-search-type="neural" aria-checked="false">Neural</button>
+                                    <button type="button" role="radio" data-search-type="fast" aria-checked="false">Fast</button>
+                                </div>
+                            </fieldset>
+                            <label class="check-row">
+                                <input id="includeHighlights" type="checkbox" checked>
+                                <span>Include highlights</span>
+                            </label>
+                        </div>
+                        <p class="field-hint">Type is sent through as Exa’s search type. Highlights come back as snippets on each result.</p>
                     </div>
 
-                    <!-- 5. Screenshot View -->
-                    <div id="contentScreenshot" class="hidden flex flex-col items-center">
-                        <img id="screenshotImage" class="rounded-xl border border-slate-200 shadow-md max-h-[550px] object-contain" alt="Page Screenshot" />
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+                    <div id="errorBanner" class="error-banner" hidden role="alert"></div>
+                </form>
 
-    <script src="/app.js"></script>
-    <script>
-        lucide.createIcons();
-    </script>
+                <div id="progressBar" class="progress" hidden><span></span></div>
+                <p id="statusLine" class="sr-only" role="status"></p>
+                <section id="stage" class="stage"></section>
+            </main>
+        </div>
+    </div>
+    <script src="/app.js?v=2"></script>
 </body>
 </html>

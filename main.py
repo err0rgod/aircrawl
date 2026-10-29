@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from scrape.browserManager import browserManagerInstance
 from scrape.router import scrapeRouter
 from search.router import searchRouter
+from parse.router import parseRouter
 
 
 @asynccontextmanager
@@ -52,6 +53,7 @@ async def addExecutionTimeHeader(request: Request, callNext) -> Response:
 # Register modular feature routers
 app.include_router(searchRouter)
 app.include_router(scrapeRouter)
+app.include_router(parseRouter)
 
 
 @app.get(
@@ -64,7 +66,7 @@ async def checkHealth() -> dict:
     return {
         "status": "healthy",
         "service": "AirCrawl",
-        "activeModules": ["search", "scrape"],
+        "activeModules": ["search", "scrape", "parse"],
     }
 
 
