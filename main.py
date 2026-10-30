@@ -27,7 +27,7 @@ app = FastAPI(
         "Production-ready Firecrawl alternative providing 6 core functions: "
         "Search, Scrape, Interact, Parse, Crawl & Monitor."
     ),
-    version="1.0.0",
+    version="1.1.0",
     lifespan=appLifespan,
 )
 
