@@ -8,16 +8,69 @@ const engineHints = {
     browser: "Headless Chromium. Use this for apps, and when you need a screenshot.",
 };
 
+const defaultSampleSchema = {
+    type: "object",
+    properties: {
+        productOrService: { type: "string" },
+        pricingTiers: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    tierName: { type: "string" },
+                    price: { type: "string" },
+                    billingCycle: { type: "string" },
+                    features: {
+                        type: "array",
+                        items: { type: "string" },
+                    },
+                },
+                required: ["tierName", "price"],
+            },
+        },
+    },
+    required: ["pricingTiers"],
+};
+
 const samples = {
     static: { mode: "scrape", value: "https://example.com", label: "Static HTML" },
     spa: { mode: "scrape", value: "https://zerodaily.in", label: "Single-page app" },
     links: { mode: "scrape", value: "https://news.ycombinator.com", label: "Link-heavy page" },
+    pricing: {
+        mode: "parse",
+        value: "https://zerodaily.in",
+        label: "Pricing & Stories",
+        prompt: "Extract the headline, key categories, and top news items with short summaries.",
+        schema: {
+            type: "object",
+            properties: {
+                headline: { type: "string" },
+                categories: {
+                    type: "array",
+                    items: { type: "string" },
+                },
+                stories: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            title: { type: "string" },
+                            summary: { type: "string" },
+                        },
+                        required: ["title"],
+                    },
+                },
+            },
+            required: ["headline", "stories"],
+        },
+    },
     query: { mode: "search", value: "what is zerodaily.in", label: "Search question" },
 };
 
 const draftInputs = {
     scrape: "https://zerodaily.in",
     search: "what is zerodaily.in",
+    parse: "https://zerodaily.in",
 };
 
 const nodes = {};
@@ -59,6 +112,7 @@ function cacheNodes() {
         "healthLabel",
         "modeScrapeBtn",
         "modeSearchBtn",
+        "modeParseBtn",
         "historyList",
         "historyEmpty",
         "clearHistoryBtn",
@@ -70,6 +124,16 @@ function cacheNodes() {
         "runLabel",
         "scrapeControls",
         "searchControls",
+        "parseControls",
+        "parseSourceGroup",
+        "parseModelGroup",
+        "parseMarkdownField",
+        "parseMarkdownInput",
+        "parsePrompt",
+        "parseSchema",
+        "schemaStatus",
+        "loadSampleSchemaBtn",
+        "clearSchemaBtn",
         "formatChips",
         "engineGroup",
         "engineHint",
@@ -93,6 +157,7 @@ function cacheNodes() {
 function bindEvents() {
     nodes.modeScrapeBtn.addEventListener("click", () => setMode("scrape"));
     nodes.modeSearchBtn.addEventListener("click", () => setMode("search"));
+    nodes.modeParseBtn.addEventListener("click", () => setMode("parse"));
     nodes.commandForm.addEventListener("submit", handleExecute);
     nodes.commandForm.addEventListener("click", handleFormClick);
     nodes.advancedToggle.addEventListener("click", toggleAdvanced);
@@ -100,6 +165,15 @@ function bindEvents() {
     nodes.historyList.addEventListener("click", handleHistoryClick);
     nodes.stage.addEventListener("click", handleStageClick);
     nodes.stage.addEventListener("input", handleStageInput);
+    nodes.parseSchema.addEventListener("input", updateSchemaValidation);
+    nodes.loadSampleSchemaBtn.addEventListener("click", () => {
+        nodes.parseSchema.value = JSON.stringify(defaultSampleSchema, null, 2);
+        updateSchemaValidation();
+    });
+    nodes.clearSchemaBtn.addEventListener("click", () => {
+        nodes.parseSchema.value = "";
+        updateSchemaValidation();
+    });
     document.addEventListener("keydown", (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
             event.preventDefault();
@@ -120,7 +194,20 @@ function handleFormClick(event) {
         return;
     }
     const typeButton = event.target.closest("[data-search-type]");
-    if (typeButton) selectSearchType(typeButton.dataset.searchType);
+    if (typeButton) {
+        selectSearchType(typeButton.dataset.searchType);
+        return;
+    }
+    const parseSourceButton = event.target.closest("[data-parse-source]");
+    if (parseSourceButton) {
+        selectParseSource(parseSourceButton.dataset.parseSource);
+        return;
+    }
+    const modelButton = event.target.closest("[data-model]");
+    if (modelButton) {
+        selectParseModel(modelButton.dataset.model);
+        return;
+    }
 }
 
 function handleStageClick(event) {
@@ -140,6 +227,16 @@ function handleStageClick(event) {
         setMode("scrape");
         nodes.commandInput.value = targetUrl;
         draftInputs.scrape = targetUrl;
+        nodes.commandInput.focus();
+        return;
+    }
+    const parseButton = event.target.closest("[data-parse-url]");
+    if (parseButton) {
+        const targetUrl = parseButton.dataset.parseUrl;
+        setMode("parse");
+        selectParseSource("url");
+        nodes.commandInput.value = targetUrl;
+        draftInputs.parse = targetUrl;
         nodes.commandInput.focus();
         return;
     }
@@ -167,21 +264,89 @@ function setMode(nextMode) {
     if (currentMode && currentMode !== nextMode) hideError();
     currentMode = nextMode;
     const isScrape = nextMode === "scrape";
+    const isSearch = nextMode === "search";
+    const isParse = nextMode === "parse";
+
     nodes.modeScrapeBtn.classList.toggle("is-on", isScrape);
-    nodes.modeSearchBtn.classList.toggle("is-on", !isScrape);
+    nodes.modeSearchBtn.classList.toggle("is-on", isSearch);
+    nodes.modeParseBtn.classList.toggle("is-on", isParse);
     nodes.modeScrapeBtn.setAttribute("aria-pressed", String(isScrape));
-    nodes.modeSearchBtn.setAttribute("aria-pressed", String(!isScrape));
+    nodes.modeSearchBtn.setAttribute("aria-pressed", String(isSearch));
+    nodes.modeParseBtn.setAttribute("aria-pressed", String(isParse));
+
     nodes.scrapeControls.hidden = !isScrape;
-    nodes.searchControls.hidden = isScrape;
-    nodes.commandEyebrow.textContent = isScrape ? "Scrape" : "Search";
-    nodes.commandHint.textContent = isScrape
-        ? "Fast HTTP, then a warm browser when the page is a shell. You get markdown, HTML, links, and screenshots."
-        : "Semantic search through Exa. Send any result straight to scrape.";
-    nodes.commandInput.placeholder = isScrape ? "https://zerodaily.in" : "Search query, for example latest tech breakthroughs";
-    nodes.commandInput.setAttribute("aria-label", isScrape ? "Page URL" : "Search query");
+    nodes.searchControls.hidden = !isSearch;
+    nodes.parseControls.hidden = !isParse;
+
+    if (isScrape) {
+        nodes.commandEyebrow.textContent = "Scrape";
+        nodes.commandHint.textContent = "Fast HTTP, then a warm browser when the page is a shell. You get markdown, HTML, links, and screenshots.";
+        nodes.commandInput.placeholder = "https://zerodaily.in";
+        nodes.commandInput.setAttribute("aria-label", "Page URL");
+        nodes.commandInput.disabled = false;
+        if (!appState.isRunning) nodes.runLabel.textContent = "Run scrape";
+    } else if (isSearch) {
+        nodes.commandEyebrow.textContent = "Search";
+        nodes.commandHint.textContent = "Semantic search through Exa. Send any result straight to scrape.";
+        nodes.commandInput.placeholder = "Search query, for example latest tech breakthroughs";
+        nodes.commandInput.setAttribute("aria-label", "Search query");
+        nodes.commandInput.disabled = false;
+        if (!appState.isRunning) nodes.runLabel.textContent = "Run search";
+    } else if (isParse) {
+        nodes.commandEyebrow.textContent = "Parse";
+        nodes.commandHint.textContent = "Extract strictly typed JSON from a webpage or direct markdown using Groq LLM inference.";
+        updateParseSourceView();
+        if (!appState.isRunning) nodes.runLabel.textContent = "Run parse";
+    }
     nodes.commandInput.value = draftInputs[nextMode] || "";
-    if (!appState.isRunning) nodes.runLabel.textContent = isScrape ? "Run scrape" : "Run search";
     refreshIcons();
+}
+
+function selectParseSource(sourceType) {
+    setSegment(nodes.parseSourceGroup, "data-parse-source", sourceType);
+    updateParseSourceView();
+}
+
+function selectParseModel(modelName) {
+    setSegment(nodes.parseModelGroup, "data-model", modelName);
+}
+
+function updateParseSourceView() {
+    const source = segmentValue(nodes.parseSourceGroup, "data-parse-source") || "url";
+    const isUrl = source === "url";
+    nodes.parseMarkdownField.hidden = isUrl;
+    if (currentMode === "parse") {
+        if (isUrl) {
+            nodes.commandInput.placeholder = "https://zerodaily.in";
+            nodes.commandInput.setAttribute("aria-label", "Webpage URL to parse");
+            nodes.commandInput.disabled = false;
+        } else {
+            nodes.commandInput.placeholder = "Parsing direct markdown content provided below...";
+            nodes.commandInput.disabled = true;
+        }
+    }
+}
+
+function updateSchemaValidation() {
+    const value = nodes.parseSchema.value.trim();
+    if (!value) {
+        nodes.schemaStatus.hidden = true;
+        return;
+    }
+    nodes.schemaStatus.hidden = false;
+    try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed === "object" && parsed !== null) {
+            nodes.schemaStatus.textContent = "Valid JSON";
+            nodes.schemaStatus.className = "schema-status ok";
+        } else {
+            nodes.schemaStatus.textContent = "Must be Object";
+            nodes.schemaStatus.className = "schema-status error";
+        }
+    } catch {
+        nodes.schemaStatus.textContent = "Invalid JSON";
+        nodes.schemaStatus.className = "schema-status error";
+    }
 }
 
 function toggleAdvanced() {
@@ -244,6 +409,14 @@ function applySample(sampleKey) {
     setMode(sample.mode);
     nodes.commandInput.value = sample.value;
     draftInputs[sample.mode] = sample.value;
+    if (sample.mode === "parse") {
+        selectParseSource("url");
+        if (sample.prompt) nodes.parsePrompt.value = sample.prompt;
+        if (sample.schema) {
+            nodes.parseSchema.value = JSON.stringify(sample.schema, null, 2);
+            updateSchemaValidation();
+        }
+    }
     nodes.commandInput.focus();
 }
 
@@ -252,14 +425,31 @@ async function handleExecute(event) {
     if (appState.isRunning) return;
     hideError();
     const inputValue = nodes.commandInput.value.trim();
-    if (!inputValue) {
-        showError(currentMode === "scrape" ? "Enter a URL to scrape." : "Enter a search query.");
+    if (currentMode === "scrape" && !inputValue) {
+        showError("Enter a URL to scrape.");
         return;
+    }
+    if (currentMode === "search" && !inputValue) {
+        showError("Enter a search query.");
+        return;
+    }
+    if (currentMode === "parse") {
+        const parseSource = segmentValue(nodes.parseSourceGroup, "data-parse-source") || "url";
+        if (parseSource === "url" && !inputValue) {
+            showError("Enter a webpage URL to parse.");
+            return;
+        }
+        if (parseSource === "markdown" && !nodes.parseMarkdownInput.value.trim()) {
+            showError("Enter markdown content to parse.");
+            return;
+        }
     }
 
     let request;
     try {
-        request = currentMode === "scrape" ? buildScrapeRequest(inputValue) : buildSearchRequest(inputValue);
+        if (currentMode === "scrape") request = buildScrapeRequest(inputValue);
+        else if (currentMode === "search") request = buildSearchRequest(inputValue);
+        else if (currentMode === "parse") request = buildParseRequest();
     } catch (validationError) {
         showError(validationError.message);
         return;
@@ -278,12 +468,47 @@ async function handleExecute(event) {
         renderHistory();
         renderCurrent();
         const seconds = ((performance.now() - startedAt) / 1000).toFixed(1);
-        setStatus((currentMode === "scrape" ? "Scrape" : "Search") + " finished in " + seconds + " seconds.");
+        const modeLabel = currentMode === "scrape" ? "Scrape" : (currentMode === "search" ? "Search" : "Parse");
+        setStatus(modeLabel + " finished in " + seconds + " seconds.");
     } catch (requestError) {
         showError(requestError.message || "Request failed.");
     } finally {
         setRunning(false);
     }
+}
+
+function buildParseRequest() {
+    const parseSource = segmentValue(nodes.parseSourceGroup, "data-parse-source") || "url";
+    const body = {
+        model: segmentValue(nodes.parseModelGroup, "data-model") || "openai/gpt-oss-120b",
+    };
+    if (parseSource === "url") {
+        const rawUrl = nodes.commandInput.value.trim();
+        if (!rawUrl) throw new Error("Enter a webpage URL to parse.");
+        const url = normalizeUrl(rawUrl);
+        if (!safeHttpUrl(url)) throw new Error("Enter a full http or https URL.");
+        body.url = url;
+        draftInputs.parse = url;
+        nodes.commandInput.value = url;
+    } else {
+        const markdown = nodes.parseMarkdownInput.value.trim();
+        if (!markdown) throw new Error("Enter markdown content to parse.");
+        body.markdown = markdown;
+    }
+
+    const prompt = nodes.parsePrompt.value.trim();
+    if (prompt) body.prompt = prompt;
+
+    const schemaRaw = nodes.parseSchema.value.trim();
+    if (schemaRaw) {
+        try {
+            body.schema = JSON.parse(schemaRaw);
+        } catch {
+            throw new Error("Target schema must be valid JSON.");
+        }
+    }
+
+    return { path: "/v1/parse", body: body };
 }
 
 function buildScrapeRequest(inputValue) {
@@ -371,7 +596,7 @@ function setRunning(isRunning) {
     nodes.progressBar.hidden = !isRunning;
     if (isRunning) {
         const started = performance.now();
-        const verb = currentMode === "scrape" ? "Scraping" : "Searching";
+        const verb = currentMode === "scrape" ? "Scraping" : (currentMode === "search" ? "Searching" : "Parsing");
         nodes.runLabel.textContent = verb;
         appState.timerId = window.setInterval(() => {
             const seconds = ((performance.now() - started) / 1000).toFixed(1);
@@ -383,7 +608,7 @@ function setRunning(isRunning) {
         clearInterval(appState.timerId);
         appState.timerId = 0;
     }
-    nodes.runLabel.textContent = currentMode === "scrape" ? "Run scrape" : "Run search";
+    nodes.runLabel.textContent = currentMode === "scrape" ? "Run scrape" : (currentMode === "search" ? "Run search" : "Run parse");
 }
 
 function renderCurrent() {
@@ -392,6 +617,7 @@ function renderCurrent() {
         return;
     }
     if (appState.lastKind === "search") renderSearch(appState.lastResponse);
+    else if (appState.lastKind === "parse") renderParse(appState.lastResponse);
     else renderScrape(appState.lastResponse);
     nodes.stage.scrollTop = 0;
     refreshIcons();
@@ -402,17 +628,19 @@ function renderEmpty() {
     nodes.stage.replaceChildren();
     const wrap = el("div", "empty");
     wrap.append(el("p", "eyebrow", "Playground"));
-    wrap.append(el("h2", "", "Read a page, or search the web."));
-    const lead = el("p", "empty-lead", "Load a sample, then run it. Auto tries a fast HTTP fetch and opens a warm browser when the page is a client-rendered shell.");
+    wrap.append(el("h2", "", "Scrape pages, search the web, or extract typed JSON."));
+    const lead = el("p", "empty-lead", "Load a sample, then run it. Scrape converts pages to markdown and HTML, Search explores via Exa, and Parse extracts structured JSON using Groq LLM inference.");
     const grid = el("div", "sample-grid");
     grid.append(
         sampleCard("static", "Scrape · static", "example.com", "A plain document. Auto should stay on HTTP."),
         sampleCard("spa", "Scrape · SPA", "zerodaily.in", "A client-rendered shell. Auto should fall back to the browser."),
-        sampleCard("links", "Scrape · links", "news.ycombinator.com", "A page with a long list of outbound links."),
-        sampleCard("query", "Search", "what is zerodaily.in", "A question for Exa. Open any hit in the scrape view."),
+        sampleCard("pricing", "Parse · JSON", "zerodaily.in", "Extract typed data conforming to a JSON Schema with Groq LLM."),
+        sampleCard("query", "Search", "what is zerodaily.in", "A question for Exa. Open any hit in the scrape or parse view."),
     );
     wrap.append(lead, grid);
     nodes.stage.append(wrap);
+    document.title = "AirCrawl";
+}
     document.title = "AirCrawl";
 }
 
@@ -553,13 +781,152 @@ function buildSearchCard(item, index) {
         const scrapeButton = el("button", "text-btn", "Scrape");
         scrapeButton.type = "button";
         scrapeButton.dataset.scrapeUrl = safeUrl;
-        actions.append(scrapeButton);
+
+        const parseButton = el("button", "text-btn", "Parse");
+        parseButton.type = "button";
+        parseButton.dataset.parseUrl = safeUrl;
+
+        actions.append(scrapeButton, parseButton);
     }
     top.append(copy, actions);
     card.append(top);
     const highlight = highlightText(item);
     if (highlight) card.append(el("p", "quote", highlight));
     return card;
+}
+
+function renderParse(parseResult) {
+    const data = parseResult.data || {};
+    const extracted = data.extracted;
+    const metadata = data.metadata || {};
+    const metrics = parseResult.metrics || {};
+    const sourceUrl = metadata.sourceUrl || (appState.lastRequest && appState.lastRequest.body && appState.lastRequest.body.url) || "";
+    const title = sourceUrl ? hostFromUrl(sourceUrl) : "Structured JSON Extraction";
+    const prompt = appState.lastRequest && appState.lastRequest.body ? appState.lastRequest.body.prompt : "";
+
+    const article = el("article", "result");
+    article.append(el("p", "result-kicker", "Parse result"));
+    article.append(el("h2", "result-title", title));
+    if (prompt) {
+        article.append(el("p", "result-desc", 'Prompt: "' + prompt + '"'));
+    } else {
+        article.append(el("p", "result-desc", "Schema-constrained extraction powered by Groq LLM inference."));
+    }
+    if (sourceUrl && safeHttpUrl(sourceUrl)) {
+        const urlLink = el("a", "result-url", sourceUrl);
+        urlLink.href = safeHttpUrl(sourceUrl);
+        urlLink.target = "_blank";
+        urlLink.rel = "noreferrer noopener";
+        article.append(urlLink);
+    }
+
+    const meta = el("div", "meta-row");
+    meta.append(metaChip(metadata.modelUsed || "Groq", "ok"));
+    meta.append(metaChip(formatDuration(metrics.durationMs), ""));
+    if (appState.lastTiming) meta.append(metaChip("HTTP " + appState.lastTiming, ""));
+    if (metadata.promptTokens != null) meta.append(metaChip(formatCount(metadata.promptTokens, "prompt token"), ""));
+    if (metadata.completionTokens != null) meta.append(metaChip(formatCount(metadata.completionTokens, "completion token"), ""));
+    if (metadata.totalTokens != null) meta.append(metaChip(formatCount(metadata.totalTokens, "total token"), ""));
+    article.append(meta);
+
+    const tabs = [
+        { id: "structured", label: "Structured JSON" },
+        { id: "json", label: "Raw JSON" },
+        { id: "stats", label: "Overview / Stats" },
+    ];
+    article.append(buildToolbar(tabs, "structured"));
+
+    // Panel 1: Structured JSON
+    const structuredPanel = el("div", "");
+    structuredPanel.dataset.panel = "structured";
+    const formattedHtml = formatJsonHtml(extracted);
+    const codePre = el("pre", "code-view");
+    codePre.innerHTML = formattedHtml;
+    structuredPanel.append(codePre);
+
+    // Panel 2: Raw JSON
+    const jsonPanel = el("div", "");
+    jsonPanel.dataset.panel = "json";
+    const rawPre = el("pre", "code-view");
+    rawPre.dataset.role = "json";
+    rawPre.textContent = JSON.stringify(parseResult, null, 2);
+    jsonPanel.append(rawPre);
+
+    // Panel 3: Overview / Stats
+    const statsPanel = el("div", "stats-container");
+    statsPanel.dataset.panel = "stats";
+
+    const statsGrid = el("div", "stats-grid");
+    const durationSec = (metrics.durationMs || 0) / 1000;
+    const tokensPerSec = durationSec > 0 && metadata.completionTokens ? Math.round(metadata.completionTokens / durationSec) : "—";
+
+    statsGrid.append(
+        statCard("Duration", formatDuration(metrics.durationMs), "End-to-end extraction time"),
+        statCard("Total Tokens", String(metadata.totalTokens != null ? metadata.totalTokens.toLocaleString() : "—"), "Tokens consumed"),
+        statCard("Prompt Tokens", String(metadata.promptTokens != null ? metadata.promptTokens.toLocaleString() : "—"), "Context input tokens"),
+        statCard("Completion Tokens", String(metadata.completionTokens != null ? metadata.completionTokens.toLocaleString() : "—"), "Generated JSON tokens"),
+        statCard("Throughput", tokensPerSec !== "—" ? tokensPerSec + " tok/s" : "—", "Token generation rate"),
+        statCard("Model", metadata.modelUsed || "openai/gpt-oss-120b", "LLM inference model"),
+    );
+
+    const detailsBox = el("div", "paper", "");
+    detailsBox.style.marginTop = "16px";
+    const prose = el("div", "prose prose-neutral");
+    let summaryHtml = "<h3>Extraction Overview</h3>";
+    summaryHtml += "<p><strong>Source:</strong> " + (sourceUrl ? '<a href="' + safeHttpUrl(sourceUrl) + '" target="_blank">' + escapeHtml(sourceUrl) + '</a>' : "Direct Markdown Input") + "</p>";
+    if (prompt) summaryHtml += "<p><strong>Natural Language Prompt:</strong> " + escapeHtml(prompt) + "</p>";
+    if (appState.lastRequest && appState.lastRequest.body && appState.lastRequest.body.schema) {
+        summaryHtml += "<p><strong>Target Schema:</strong> Schema provided (" + Object.keys(appState.lastRequest.body.schema.properties || {}).length + " top-level fields)</p>";
+    }
+    prose.innerHTML = summaryHtml;
+    detailsBox.append(prose);
+
+    statsPanel.append(statsGrid, detailsBox);
+
+    article.append(structuredPanel, jsonPanel, statsPanel);
+    nodes.stage.replaceChildren(article);
+    showOutputTab("structured");
+    document.title = trimTitle(title) + " · AirCrawl";
+}
+
+function statCard(label, value, subtext) {
+    const card = el("div", "stat-card");
+    card.append(el("p", "stat-label", label), el("p", "stat-value", value));
+    if (subtext) card.append(el("p", "stat-sub", subtext));
+    return card;
+}
+
+function formatJsonHtml(data) {
+    const rawJson = JSON.stringify(data, null, 2);
+    if (!rawJson) return "<em>Empty response</em>";
+    const escaped = escapeHtml(rawJson);
+    return escaped.replace(
+        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        (match) => {
+            let className = "json-number";
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    className = "json-key";
+                } else {
+                    className = "json-string";
+                }
+            } else if (/true|false/.test(match)) {
+                className = "json-boolean";
+            } else if (/null/.test(match)) {
+                className = "json-null";
+            }
+            return '<span class="' + className + '">' + match + "</span>";
+        }
+    );
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function buildToolbar(tabs, activeId) {
@@ -695,9 +1062,16 @@ function filterLinkRows(query) {
 function activeText() {
     const panel = nodes.stage.querySelector("[data-panel='" + appState.outputTab + "']");
     if (!panel) return "";
+    if (appState.outputTab === "structured") {
+        const data = appState.lastResponse && appState.lastResponse.data ? appState.lastResponse.data.extracted : null;
+        return data != null ? JSON.stringify(data, null, 2) : "";
+    }
     if (appState.outputTab === "json") {
         const pre = panel.querySelector("[data-role='json']");
-        return pre ? pre.textContent : "";
+        return pre ? pre.textContent : (appState.lastResponse ? JSON.stringify(appState.lastResponse, null, 2) : "");
+    }
+    if (appState.outputTab === "stats") {
+        return panel.innerText || panel.textContent || "";
     }
     if (appState.outputTab === "links") {
         return [...panel.querySelectorAll(".link-row:not([hidden])")]
@@ -741,8 +1115,16 @@ function downloadActiveContent() {
         anchor.click();
         return;
     }
+    if (tab === "structured") {
+        downloadBlob(slug + "-extracted.json", activeText(), "application/json");
+        return;
+    }
     if (tab === "json") {
         downloadBlob(slug + ".json", activeText(), "application/json");
+        return;
+    }
+    if (tab === "stats") {
+        downloadBlob(slug + "-stats.txt", activeText(), "text/plain");
         return;
     }
     if (tab === "html" || tab === "rawHtml") {
@@ -787,16 +1169,29 @@ function fileSlug() {
         const query = appState.lastRequest && appState.lastRequest.body ? appState.lastRequest.body.query : "search";
         return slugify(query) || "search";
     }
+    if (appState.lastKind === "parse") {
+        const url = appState.lastRequest && appState.lastRequest.body ? appState.lastRequest.body.url : "";
+        if (url) return slugify(hostFromUrl(url) || "parse") || "parse";
+        return "parsed-data";
+    }
     const url = appState.lastRequest && appState.lastRequest.body ? appState.lastRequest.body.url : "";
     return slugify(hostFromUrl(url) || "page") || "page";
 }
 
 function rememberRun(request, payload, serverTiming) {
+    let label = "";
+    if (currentMode === "scrape") {
+        label = request.body.url;
+    } else if (currentMode === "search") {
+        label = request.body.query;
+    } else if (currentMode === "parse") {
+        label = request.body.url || (request.body.prompt ? "MD: " + request.body.prompt : "Markdown parse");
+    }
     const record = {
         id: String(Date.now()),
         at: Date.now(),
         mode: currentMode,
-        label: currentMode === "scrape" ? request.body.url : request.body.query,
+        label: label,
         request: request,
         response: trimForHistory(currentMode, payload),
         serverTiming: serverTiming,
@@ -807,7 +1202,7 @@ function rememberRun(request, payload, serverTiming) {
 }
 
 function trimForHistory(kind, payload) {
-    if (kind === "search") return payload;
+    if (kind === "search" || kind === "parse") return payload;
     const data = payload.data || {};
     const markdown = typeof data.markdown === "string" ? data.markdown : "";
     const trimmed = markdown.length > markdownHistoryLimit;
@@ -877,11 +1272,28 @@ function applyRequestToForm(body, mode) {
         updateScreenshotHint();
         return;
     }
-    nodes.commandInput.value = body.query || "";
-    draftInputs.search = nodes.commandInput.value;
-    nodes.searchLimit.value = String(body.numResults || 5);
-    selectSearchType(body.searchType || "auto");
-    nodes.includeHighlights.checked = body.includeHighlights !== false;
+    if (mode === "search") {
+        nodes.commandInput.value = body.query || "";
+        draftInputs.search = nodes.commandInput.value;
+        nodes.searchLimit.value = String(body.numResults || 5);
+        selectSearchType(body.searchType || "auto");
+        nodes.includeHighlights.checked = body.includeHighlights !== false;
+        return;
+    }
+    if (mode === "parse") {
+        if (body.url) {
+            selectParseSource("url");
+            nodes.commandInput.value = body.url;
+            draftInputs.parse = body.url;
+        } else if (body.markdown) {
+            selectParseSource("markdown");
+            nodes.parseMarkdownInput.value = body.markdown;
+        }
+        nodes.parsePrompt.value = body.prompt || "";
+        nodes.parseSchema.value = body.schema ? JSON.stringify(body.schema, null, 2) : "";
+        selectParseModel(body.model || "openai/gpt-oss-120b");
+        updateSchemaValidation();
+    }
 }
 
 function loadHistory() {

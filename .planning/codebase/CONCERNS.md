@@ -2,15 +2,19 @@
 
 **Analysis Date:** 2026-10-30
 
-## Technical Debt & Gaps
+## Resolved Concerns & Fixes
 
-### 1. Missing Parse Mode in Playground UI
-- **Issue:** The backend provides a fully functional `/v1/parse` endpoint (`parse/router.py`, `parse/extractor.py`), but the frontend developer console (`frontend/index.html` and `frontend/app.js`) currently only exposes **Scrape** and **Search** modes.
-- **Why:** Parse was recently implemented in the backend as Type B JSON extraction, and the UI has not yet been extended with schema/prompt input fields and JSON inspector tabs.
-- **Impact:** Developers cannot test structured extraction directly from the web UI; they must use `/docs` (Swagger) or curl.
-- **Fix Approach:** Add a third mode button ("Parse") to `frontend/index.html` and integrate prompt/schema textarea controls in `frontend/app.js`.
+### 1. Missing Parse Mode in Playground UI [RESOLVED]
+- **Status:** Resolved in `frontend/index.html`, `frontend/app.js`, and `frontend/styles.css`.
+- **Implementation:** Added full Parse console mode with URL/Direct Markdown toggle, prompt textarea, JSON Schema validator with sample loader, Groq model selector (`openai/gpt-oss-120b` and `llama-3.3-70b-versatile`), syntax-highlighted structured JSON output, raw JSON tab, and performance/token metrics tab.
 
-### 2. Single-Host Synchronous Scrape Execution
+### 2. SSRF (Server-Side Request Forgery) Vulnerability [RESOLVED]
+- **Status:** Resolved via `scrape/security.py`.
+- **Implementation:** Integrated strict `validateTargetUrl()` into `scrape/scrape.py` and `parse/extractor.py`. Blocks private IPv4/IPv6 networks, loopback, link-local, AWS EC2/Lightsail metadata (`169.254.169.254`), non-HTTP schemes, and internal hostnames. Tested and verified in `tests/test_ssrf.py`.
+
+## Technical Debt & Active Gaps
+
+### 1. Single-Host Synchronous Scrape Execution
 - **Issue:** All scrape requests are processed synchronously within the incoming HTTP request cycle.
 - **Why:** Initial architecture optimized for low-latency single-page scraping without heavy infrastructure overhead.
 - **Impact:** Long-running requests (e.g. slow websites with 30s timeouts) tie up Uvicorn worker threads. For future `/v1/crawl` multi-page jobs, HTTP connections will timeout.
@@ -24,12 +28,7 @@
 
 ## Security Considerations
 
-### 1. SSRF (Server-Side Request Forgery) Vulnerability
-- **Risk:** High. The `scrapeUrl` and `extractStructuredData` functions accept arbitrary target URLs from user input and make outbound HTTP/browser requests.
-- **Current State:** No private IP or localhost filtering is implemented. An attacker could potentially request `http://169.254.169.254/latest/meta-data/` (AWS EC2/Lightsail instance metadata) or internal loopback services (`http://127.0.0.1:8000`).
-- **Mitigation Needed:** Implement strict URL validation before making requests, resolving DNS and blocking private CIDR blocks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.0/8`, `169.254.169.254`).
-
-### 2. Unauthenticated API Endpoints
+### 1. Unauthenticated API Endpoints
 - **Risk:** Medium. All endpoints (`/v1/scrape`, `/v1/search`, `/v1/parse`) are currently public and unauthenticated with CORS allowed for all origins (`*`).
 - **Current State:** No API key check or IP rate limiting.
 - **Mitigation Needed:** Implement API key validation (`X-API-Key`) and token-bucket rate limiting (tracked in TODO.md section 2).

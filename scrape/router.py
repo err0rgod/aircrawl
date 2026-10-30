@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from scrape.scrape import scrapeUrl
+from scrape.security import SsrfValidationError
 
 scrapeRouter = APIRouter(prefix="/v1/scrape", tags=["Scrape"])
 
@@ -41,15 +42,18 @@ class ScrapeRequest(BaseModel):
 )
 async def performScrape(scrapeRequest: ScrapeRequest) -> dict:
     """Handles page scraping requests and returns standardized markdown and metadata."""
-    scrapeResult = await scrapeUrl(
-        url=scrapeRequest.url,
-        mode=scrapeRequest.mode,
-        formats=scrapeRequest.formats,
-        waitForSelector=scrapeRequest.waitForSelector,
-        timeoutMs=scrapeRequest.timeoutMs,
-    )
+    try:
+        scrapeResult = await scrapeUrl(
+            url=scrapeRequest.url,
+            mode=scrapeRequest.mode,
+            formats=scrapeRequest.formats,
+            waitForSelector=scrapeRequest.waitForSelector,
+            timeoutMs=scrapeRequest.timeoutMs,
+        )
 
-    if not scrapeResult["success"]:
-        raise HTTPException(status_code=500, detail=scrapeResult["error"])
+        if not scrapeResult["success"]:
+            raise HTTPException(status_code=500, detail=scrapeResult["error"])
 
-    return scrapeResult
+        return scrapeResult
+    except SsrfValidationError as ssrfError:
+        raise HTTPException(status_code=400, detail=str(ssrfError))

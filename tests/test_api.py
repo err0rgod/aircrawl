@@ -38,6 +38,8 @@ async def testFrontendRoot():
         assert response.status_code == 200
         assert "<!DOCTYPE html>" in response.text
         assert "AirCrawl" in response.text
+        assert "modeParseBtn" in response.text
+        assert "parseControls" in response.text
 
 
 def testSpaDetectionHelper():

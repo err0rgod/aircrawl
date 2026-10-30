@@ -8,6 +8,7 @@ import httpx
 from markdownify import markdownify as md
 
 from scrape.browserManager import browserManagerInstance
+from scrape.security import SsrfValidationError, validateTargetUrl
 
 # Common headers to avoid naive bot detection
 standardHeaders = {
@@ -94,13 +95,27 @@ def extractPageDetails(rawHtml: str, pageUrl: str) -> dict:
     }
 
 
+async def validateResponseRedirect(response: httpx.Response) -> None:
+    """Validates HTTP redirects to prevent SSRF via redirect to internal IP addresses."""
+    if response.is_redirect:
+        redirectHeader = response.headers.get("location")
+        if redirectHeader:
+            resolvedRedirectUrl = urljoin(str(response.url), redirectHeader)
+            validateTargetUrl(resolvedRedirectUrl)
+
+
 async def scrapeHttp(url: str, timeoutMs: int = 15000) -> dict | None:
     """Fast static fetcher using HTTP client.
     Returns parsed dictionary or None if dynamic rendering is required.
     """
+    validateTargetUrl(url)
     timeoutSeconds = timeoutMs / 1000.0
     try:
-        async with httpx.AsyncClient(headers=standardHeaders, follow_redirects=True) as httpClient:
+        async with httpx.AsyncClient(
+            headers=standardHeaders,
+            follow_redirects=True,
+            event_hooks={"response": [validateResponseRedirect]},
+        ) as httpClient:
             response = await httpClient.get(url, timeout=timeoutSeconds)
             statusCode = response.status_code
             rawHtml = response.text
@@ -121,6 +136,8 @@ async def scrapeHttp(url: str, timeoutMs: int = 15000) -> dict | None:
                 "screenshot": None,
                 "engineUsed": "http",
             }
+    except SsrfValidationError:
+        raise
     except Exception:
         # Any network or SSL error with static client hands over to browser
         return None
@@ -133,6 +150,7 @@ async def scrapeBrowser(
     captureScreenshot: bool = False,
 ) -> dict:
     """Dynamic browser fetcher using warm Playwright Chromium."""
+    validateTargetUrl(url)
     incognitoContext = await browserManagerInstance.createIncognitoContext()
     page = await incognitoContext.new_page()
     screenshotBase64 = None
@@ -184,6 +202,9 @@ async def scrapeUrl(
     - mode: 'auto' (fast HTTP with browser fallback), 'http', or 'browser'
     - formats: ['markdown', 'html', 'rawHtml', 'links', 'screenshot']
     """
+    # Validate target URL upfront against SSRF threats before initiating any network connections
+    validateTargetUrl(url)
+
     startTime = time.time()
 
     if formats is None:
@@ -250,6 +271,8 @@ async def scrapeUrl(
             "error": None,
         }
 
+    except SsrfValidationError:
+        raise
     except Exception as errorOccurred:
         executionDurationMs = round((time.time() - startTime) * 1000, 2)
         return {

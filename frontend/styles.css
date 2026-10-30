@@ -445,6 +445,70 @@ button:disabled { cursor: not-allowed; }
 
 .field-input { height: 40px; font-size: 14px; }
 
+.field-input.field-textarea, .field-textarea {
+    height: auto;
+    min-height: 54px;
+    padding: 10px 14px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.code-font {
+    font-family: var(--mono);
+    font-size: 13px;
+}
+
+.parse-options-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.parse-field {
+    margin-top: 14px;
+}
+
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.field-header span, .field-header label {
+    margin: 0;
+}
+
+.schema-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.schema-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 99px;
+}
+
+.schema-status.ok {
+    color: var(--ok);
+    background: rgba(142, 224, 181, 0.12);
+    border: 1px solid rgba(142, 224, 181, 0.35);
+}
+
+.schema-status.error {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border: 1px solid rgba(255, 180, 168, 0.35);
+}
+
 .field-input.narrow { width: 96px; }
 
 .search-grid { align-items: end; }
@@ -636,6 +700,55 @@ input[type="checkbox"] { accent-color: #14b8a6; width: 15px; height: 15px; }
     line-height: 1.6;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+.json-key { color: var(--accent); }
+.json-string { color: var(--ok); }
+.json-number { color: var(--amber); }
+.json-boolean { color: #93c5fd; }
+.json-null { color: var(--faint); }
+
+.stats-container {
+    display: grid;
+    gap: 16px;
+    max-width: 900px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.stat-card {
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(16, 32, 41, 0.72);
+}
+
+.stat-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+    margin: 0 0 4px;
+}
+
+.stat-value {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.stat-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 2px 0 0;
 }
 
 .panel-note { margin: 0 0 8px; color: var(--faint); font-size: 12.5px; }

@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from groq import AsyncGroq
 
 from scrape.scrape import scrapeUrl
+from scrape.security import validateTargetUrl
 
 load_dotenv()
 
@@ -41,6 +42,9 @@ async def extractStructuredData(
     # Step 1: Ensure we have content (either directly provided or fetched via scrapeUrl)
     resolvedContent = markdownContent
     sourceUrl = url
+
+    if url:
+        validateTargetUrl(url)
 
     if not resolvedContent and url:
         scrapeResponse = await scrapeUrl(url=url, formats=["markdown"])

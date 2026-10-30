@@ -31,7 +31,7 @@
 ## 4. Security & Anti-Bot Protection
 - [ ] **Proxy Infrastructure & Rotation:** Residential and datacenter proxy rotation support with sticky sessions
 - [ ] **Stealth & Fingerprint Masking:** Advanced anti-bot measures (Canvas, WebGL, AudioContext, and TLS fingerprint randomization)
-- [ ] **SSRF & Input Hardening:** Strict URL validation to block access to internal private IP ranges (e.g. `10.0.0.0/8`, `169.254.169.254`, `localhost`)
+- [x] **SSRF & Input Hardening:** Strict URL validation and DNS resolution to block access to internal private IP ranges (e.g. `10.0.0.0/8`, `169.254.169.254`, `localhost`, link-local, carrier NAT, and IPv6 ULA)
 - [ ] **Secrets & Vault Management:** Secure environment key storage and encrypted credential handling
 
 ---

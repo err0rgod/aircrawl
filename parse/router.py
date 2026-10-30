@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from parse.extractor import extractStructuredData
+from scrape.security import SsrfValidationError
 
 parseRouter = APIRouter(prefix="/v1/parse", tags=["Parse"])
 
@@ -50,6 +51,8 @@ async def performParse(parseRequest: ParseRequest) -> dict:
             preferredModel=parseRequest.model,
         )
         return parseResult
+    except SsrfValidationError as ssrfError:
+        raise HTTPException(status_code=400, detail=str(ssrfError))
     except ValueError as validationError:
         raise HTTPException(status_code=400, detail=str(validationError))
     except Exception as serverError:

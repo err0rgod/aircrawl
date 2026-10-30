@@ -13,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="/styles.css?v=2">
+    <link rel="stylesheet" href="/styles.css?v=3">
 </head>
 <body>
     <a class="skip" href="#commandInput">Skip to command</a>
@@ -61,6 +61,13 @@
                             <small>Semantic web search</small>
                         </span>
                     </button>
+                    <button type="button" id="modeParseBtn" class="mode-btn" aria-pressed="false">
+                        <i data-lucide="braces"></i>
+                        <span>
+                            <strong>Parse</strong>
+                            <small>Structured JSON</small>
+                        </span>
+                    </button>
                 </nav>
 
                 <div class="history-block">
@@ -72,7 +79,7 @@
                     <div id="historyList" class="history-list"></div>
                 </div>
 
-                <p class="rail-note">Search and scrape are live. Interact, parse, crawl, and monitor are next.</p>
+                <p class="rail-note">Scrape, search, and parse are live. Crawl, interact, and monitor are next.</p>
             </aside>
 
             <main class="main-pane">
@@ -160,6 +167,71 @@
                         <p class="field-hint">Type is sent through as Exa’s search type. Highlights come back as snippets on each result.</p>
                     </div>
 
+                    <div id="parseControls" class="controls" hidden>
+                        <div class="parse-options-grid">
+                            <fieldset class="field">
+                                <legend>Source</legend>
+                                <div id="parseSourceGroup" class="segment" role="radiogroup" aria-label="Input source">
+                                    <button type="button" class="is-on" role="radio" data-parse-source="url" aria-checked="true">Webpage URL</button>
+                                    <button type="button" role="radio" data-parse-source="markdown" aria-checked="false">Direct Markdown</button>
+                                </div>
+                            </fieldset>
+                            <fieldset class="field">
+                                <legend>Groq Model</legend>
+                                <div id="parseModelGroup" class="segment" role="radiogroup" aria-label="LLM Model">
+                                    <button type="button" class="is-on" role="radio" data-model="openai/gpt-oss-120b" aria-checked="true">GPT-OSS 120B (Default)</button>
+                                    <button type="button" role="radio" data-model="llama-3.3-70b-versatile" aria-checked="false">Llama 3.3 70B</button>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <div id="parseMarkdownField" class="field parse-field" hidden>
+                            <label for="parseMarkdownInput">
+                                <span>Direct Markdown Content</span>
+                            </label>
+                            <textarea
+                                id="parseMarkdownInput"
+                                class="field-input field-textarea code-font"
+                                rows="5"
+                                spellcheck="false"
+                                placeholder="# Paste markdown content here to extract structured data from directly..."
+                            ></textarea>
+                        </div>
+
+                        <div class="field parse-field">
+                            <label for="parsePrompt">
+                                <span>Extraction Prompt (optional)</span>
+                            </label>
+                            <textarea
+                                id="parsePrompt"
+                                class="field-input field-textarea"
+                                rows="2"
+                                spellcheck="false"
+                                placeholder="e.g. Extract all pricing tiers, price, and features"
+                            ></textarea>
+                        </div>
+
+                        <div class="field parse-field">
+                            <div class="field-header">
+                                <label for="parseSchema">
+                                    <span>Target JSON Schema (optional)</span>
+                                </label>
+                                <div class="schema-actions">
+                                    <span id="schemaStatus" class="schema-status" hidden>Valid JSON</span>
+                                    <button type="button" id="loadSampleSchemaBtn" class="text-btn">Load Sample Schema</button>
+                                    <button type="button" id="clearSchemaBtn" class="text-btn">Clear</button>
+                                </div>
+                            </div>
+                            <textarea
+                                id="parseSchema"
+                                class="field-input field-textarea code-font"
+                                rows="6"
+                                spellcheck="false"
+                                placeholder='{\n  "type": "object",\n  "properties": {\n    "title": { "type": "string" }\n  }\n}'
+                            ></textarea>
+                        </div>
+                    </div>
+
                     <div id="errorBanner" class="error-banner" hidden role="alert"></div>
                 </form>
 
@@ -169,6 +241,6 @@
             </main>
         </div>
     </div>
-    <script src="/app.js?v=2"></script>
+    <script src="/app.js?v=3"></script>
 </body>
 </html>
